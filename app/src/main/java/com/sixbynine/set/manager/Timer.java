@@ -1,41 +1,16 @@
-package com.sixbynine.set.object;
-
-import android.os.Handler;
-import android.os.Looper;
-
-import java.util.HashSet;
-import java.util.Set;
+package com.sixbynine.set.manager;
 
 /**
  * Created by steviekideckel on 11/2/14.
  */
-public class Timer {
+public class Timer extends Manager{
     private static Timer sInstance;
 
     private int mTotalTime;
     private int mSecondsRemaining;
-    private Handler mHandler;
-    private Set<Listener> mListeners;
     private boolean mRunning;
 
-    public interface Listener{
-        public void onTimerUpdate(TimerEvent e, Object... data);
-    }
-
-    public enum TimerEvent{
-        TICK,
-        PAUSE,
-        START,
-        STOP,
-        RESET,
-        RESUME,
-        FINISH;
-    }
-
-    private Timer(){
-        mListeners = new HashSet<Listener>();
-        mHandler = new Handler(Looper.getMainLooper());
-    }
+    private Timer(){}
 
     public static Timer getInstance(){
         if(sInstance == null){
@@ -48,14 +23,6 @@ public class Timer {
         return sInstance;
     }
 
-    public void addListener(Listener listener){
-        mListeners.add(listener);
-    }
-
-    public void removeListener(Listener listener){
-        mListeners.remove(listener);
-    }
-
     public void setDuration(int seconds){
         mTotalTime = seconds;
     }
@@ -63,24 +30,24 @@ public class Timer {
     public void start(){
         mSecondsRemaining = mTotalTime;
         mHandler.postDelayed(mTickRunnable, 1000);
-        publish(TimerEvent.START);
+        publish(UpdateEvent.TIMER_START);
     }
 
     public void pause(){
         mRunning = false;
-        publish(TimerEvent.PAUSE);
+        publish(UpdateEvent.TIMER_PAUSE);
     }
 
     public void resume(){
         mRunning = true;
         mHandler.postDelayed(mTickRunnable, 1000);
-        publish(TimerEvent.RESUME);
+        publish(UpdateEvent.TIMER_RESUME);
     }
 
     public void reset(){
         mRunning = false;
         mSecondsRemaining = mTotalTime;
-        publish(TimerEvent.RESUME);
+        publish(UpdateEvent.TIMER_RESET);
     }
 
     public int getTotalTime(){
@@ -91,21 +58,15 @@ public class Timer {
         return mSecondsRemaining;
     }
 
-    public void publish(TimerEvent e, Object... data){
-        for(Listener l : mListeners){
-            l.onTimerUpdate(e, data);
-        }
-    }
-
     private Runnable mTickRunnable = new Runnable() {
         @Override
         public void run() {
             if(mRunning){
                 mSecondsRemaining--;
                 if(mSecondsRemaining > 0){
-                    publish(TimerEvent.TICK, mSecondsRemaining);
+                    publish(UpdateEvent.TIMER_TICK, mSecondsRemaining);
                 }else{
-                    publish(TimerEvent.FINISH);
+                    publish(UpdateEvent.TIMER_FINISH);
                 }
                 mHandler.postDelayed(this, 1000);
             }
